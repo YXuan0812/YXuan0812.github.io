@@ -14,7 +14,8 @@
         .container {
             background: white; padding: 40px 30px; border-radius: 24px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1); width: 100%;
-            max-width: 800px; /* 加宽了容器以适应时间轴 */
+            max-width: 800px;
+            position: relative;
         }
         .lock-icon { font-size: 64px; margin-bottom: 20px; }
         h1 { color: #2d3436; margin-bottom: 10px; text-align: center; }
@@ -34,11 +35,72 @@
         #errorMsg { color: #ff7675; margin-top: 15px; text-align: center; font-weight: bold; min-height: 22px; }
         #hiddenContent { display: none; margin-top: 40px; }
 
-        /* 时间轴专属样式 */
+        /* ===== 试看相关样式 ===== */
+        #previewBtn {
+            background: transparent;
+            color: #9b59b6;
+            border: 2px solid #9b59b6;
+            padding: 14px 28px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 12px;
+            transition: all 0.3s;
+        }
+        #previewBtn:hover {
+            background: #9b59b6;
+            color: white;
+        }
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 20px 0 16px;
+            color: #b2bec3;
+            font-size: 0.85em;
+        }
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid #dfe6e9;
+        }
+        .divider::before { margin-right: 16px; }
+        .divider::after { margin-left: 16px; }
+
+        .timeline-item.preview-hidden {
+            filter: blur(6px);
+            pointer-events: none;
+            user-select: none;
+            opacity: 0.6;
+            transition: filter 0.4s, opacity 0.4s;
+        }
+        .timeline-item.preview-hidden .timeline-content {
+            background: #f0f0f0;
+        }
+        .preview-overlay {
+            text-align: center;
+            margin: 30px 0 20px;
+            padding: 20px;
+            background: #f9f0ff;
+            border-radius: 16px;
+            border: 2px dashed #9b59b6;
+            color: #6c3b7a;
+            font-weight: 500;
+        }
+        .preview-overlay span {
+            font-size: 28px;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        /* ===== 时间轴样式 ===== */
         .timeline {
             position: relative; max-width: 700px; margin: 40px auto 20px;
         }
-        .timeline::after { /* 中间轴线 */
+        .timeline::after {
             content: ''; position: absolute; width: 6px;
             background: linear-gradient(to bottom, #9b59b6, #dfe6e9);
             top: 0; bottom: 0; left: 50%; margin-left: -3px; border-radius: 3px;
@@ -52,7 +114,7 @@
         .timeline-content {
             padding: 20px; background: #f9f9f9; border-radius: 16px;
             box-shadow: 0 6px 16px rgba(0,0,0,0.08); position: relative;
-            border-left: 5px solid #9b59b6; /* 左侧装饰条 */
+            border-left: 5px solid #9b59b6;
         }
         .timeline-item:nth-child(even) .timeline-content { border-left: none; border-right: 5px solid #8e44ad; }
         .timeline-item .date {
@@ -64,7 +126,6 @@
             width: 100%; max-height: 220px; object-fit: cover; border-radius: 12px;
             margin-top: 12px; border: 1px solid #eee;
         }
-        /* 时间轴节点图标 */
         .timeline-item::after {
             content: ''; position: absolute; width: 24px; height: 24px;
             background-color: white; border: 5px solid #9b59b6;
@@ -78,12 +139,210 @@
             .timeline-item::after { left: 19px !important; }
             .timeline-content { border-left: 5px solid #9b59b6 !important; border-right: none !important; }
         }
+
+        /* ===== 新增：修改日志弹窗样式 ===== */
+        #changelogBtn {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: rgba(155, 89, 182, 0.15);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(155, 89, 182, 0.25);
+            color: #6c3b7a;
+            padding: 10px 16px;
+            border-radius: 30px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(155, 89, 182, 0.15);
+            transition: all 0.3s;
+            z-index: 999;
+            letter-spacing: 0.5px;
+        }
+        #changelogBtn:hover {
+            background: rgba(155, 89, 182, 0.3);
+            transform: scale(1.04);
+            box-shadow: 0 6px 24px rgba(155, 89, 182, 0.25);
+        }
+
+        /* 遮罩层 */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        /* 弹窗主体 */
+        .modal-box {
+            background: white;
+            max-width: 520px;
+            width: 100%;
+            max-height: 80vh;
+            border-radius: 24px;
+            padding: 32px 28px 20px;
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.25);
+            animation: modalFadeIn 0.35s ease;
+            overflow-y: auto;
+            position: relative;
+        }
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: scale(0.96) translateY(16px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #f0e8f5;
+        }
+        .modal-header h2 {
+            margin: 0;
+            font-size: 20px;
+            color: #2d3436;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .modal-header h2 span {
+            font-size: 22px;
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 26px;
+            color: #b2bec3;
+            cursor: pointer;
+            padding: 0 6px;
+            transition: color 0.2s;
+            line-height: 1;
+        }
+        .modal-close:hover {
+            color: #e17055;
+        }
+
+        .changelog-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .changelog-list li {
+            display: flex;
+            gap: 14px;
+            padding: 12px 0;
+            border-bottom: 1px solid #f5f0f8;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #2d3436;
+        }
+        .changelog-list li:last-child {
+            border-bottom: none;
+        }
+        .changelog-version {
+            font-weight: 700;
+            color: #9b59b6;
+            white-space: nowrap;
+            min-width: 60px;
+            font-size: 13px;
+            padding-top: 1px;
+        }
+        .changelog-desc {
+            color: #555;
+        }
+        .changelog-desc .tag {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 1px 10px;
+            border-radius: 20px;
+            margin-right: 6px;
+            background: #f0e8f5;
+            color: #6c3b7a;
+        }
+        .changelog-desc .tag.add { background: #e8f5e9; color: #2e7d32; }
+        .changelog-desc .tag.fix { background: #fff3e0; color: #e65100; }
+        .changelog-desc .tag.upgrade { background: #e3f2fd; color: #0d47a1; }
+
+        .modal-footer {
+            margin-top: 18px;
+            padding-top: 14px;
+            border-top: 1px solid #f0e8f5;
+            text-align: right;
+            color: #b2bec3;
+            font-size: 12px;
+        }
     </style>
 </head>
 
-
-
 <body>
+    <!-- ===== 修改日志按钮（固定在右下角） ===== -->
+    <button id="changelogBtn">📝 修改日志</button>
+
+    <!-- ===== 修改日志弹窗 ===== -->
+    <div class="modal-overlay" id="changelogModal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h2><span>📋</span> 修改日志</h2>
+                <button class="modal-close" id="modalCloseBtn">✕</button>
+            </div>
+            <ul class="changelog-list">
+                <li>
+                    <span class="changelog-version">v1.5</span>
+                    <span class="changelog-desc">
+                        <span class="tag add">新增</span> 修改日志弹窗 · 试看模式入口 · 静音控制
+                    </span>
+                </li>
+                <li>
+                    <span class="changelog-version">v1.4</span>
+                    <span class="changelog-desc">
+                        <span class="tag upgrade">优化</span> 全面升级紫色主题，更贴合星空/银河氛围
+                    </span>
+                </li>
+                <li>
+                    <span class="changelog-version">v1.3</span>
+                    <span class="changelog-desc">
+                        <span class="tag add">新增</span> 背景音乐《银河列车》及控制面板
+                    </span>
+                </li>
+                <li>
+                    <span class="changelog-version">v1.2</span>
+                    <span class="changelog-desc">
+                        <span class="tag add">新增</span> 拍立得合照 · 完善时间轴内容
+                    </span>
+                </li>
+                <li>
+                    <span class="changelog-version">v1.1</span>
+                    <span class="changelog-desc">
+                        <span class="tag upgrade">重构</span> 时间轴双栏布局 · 左右交替展示
+                    </span>
+                </li>
+                <li>
+                    <span class="changelog-version">v1.0</span>
+                    <span class="changelog-desc">
+                        <span class="tag add">创建</span> 时光胶囊网站 · 密码保护 · 初始时间轴
+                    </span>
+                </li>
+            </ul>
+            <div class="modal-footer">
+                最后更新：2025年1月 · 送给萱萱的礼物 🎁
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 主容器 ===== -->
     <div class="container">
         <div id="loginArea">
             <div style="text-align: center;">
@@ -94,6 +353,12 @@
             <input type="password" id="passwordInput" placeholder="请输入密码..." autocomplete="off">
             <button id="submitBtn">进入时光隧道</button>
             <div id="errorMsg"></div>
+
+            <div class="divider">— 或 —</div>
+            <button id="previewBtn">✨ 先看看片段</button>
+            <p style="color: #b2bec3; font-size: 0.85em; text-align: center; margin-top: 12px;">
+                试看前两件事，完整内容需密码解锁
+            </p>
         </div>
 
         <div id="hiddenContent">
@@ -102,7 +367,7 @@
                 <p style="color: #636e72;">一路以来的点点滴滴，都值得珍藏。</p>
             </div>
 
-                        <div style="text-align: center; margin: 30px auto;">
+            <div style="text-align: center; margin: 30px auto;">
                 <button id="muteToggleBtn"
                         style="background: none; border: none; font-size: 40px; cursor: pointer; color: #9b59b6; outline: none;">
                     🔇
@@ -112,22 +377,16 @@
                 </p>
             </div>
 
-            <!-- 时间轴内容区域：请从这里开始编辑 -->
-            <div class="timeline">
-
-                <!-- 事件1：第一次聊天 -->
-                <div class="timeline-item">
+            <div class="timeline" id="timelineContainer">
+                <div class="timeline-item preview-visible" data-index="0">
                     <div class="timeline-content">
                         <div class="date">2022.08.15</div>
                         <h3>第一次聊天</h3>
                         <p>还记得是在新生群里，因为讨论一道数学题我们加上了好友。你开头第一句是“你好呀，我是萱萱”，我说“我是儇儇”。没想到，这就是我们故事的开始。</p>
-                        <!-- 如果有当时的截图，可以放在这里 -->
-                        <!-- <img src="https://你的图床链接/first-chat.jpg" alt="第一次聊天截图"> -->
                     </div>
                 </div>
 
-                <!-- 事件2：成为闺蜜 -->
-                <div class="timeline-item">
+                <div class="timeline-item preview-visible" data-index="1">
                     <div class="timeline-content">
                         <div class="date">2022.11.03</div>
                         <h3>正式成为闺蜜</h3>
@@ -135,8 +394,7 @@
                     </div>
                 </div>
 
-                <!-- 事件3：关键安慰 -->
-                <div class="timeline-item">
+                <div class="timeline-item preview-hidden" data-index="2">
                     <div class="timeline-content">
                         <div class="date">2023.03.20</div>
                         <h3>深夜里的安慰</h3>
@@ -144,20 +402,17 @@
                     </div>
                 </div>
 
-                <!-- 事件4：拍合照 -->
-                <div class="timeline-item">
+                <div class="timeline-item preview-hidden" data-index="3">
                     <div class="timeline-content">
                         <div class="date">2023.10.01</div>
                         <h3>第一张拍立得合照</h3>
                         <p>国庆节一起出去玩，在咖啡馆用了店里的拍立得。虽然照片有点“糊”，但我们都笑得好开心。这张照片我一直放在笔袋里。就像我说的：<em>“照片是模糊的，但此刻并肩的温度，在我心里清晰如初。”</em></p>
-                        <!-- 强烈建议把这张有意义的照片放上来 -->
-                        <img src="https://i.ibb.co/WZrmtF8/Screenshot-2024-08-21-at-20-48-36.png"  alt="我们的拍立得合照"
-                                 style="width: 100%; max-height: 220px; object-fit: cover; border-radius: 12px; margin-top: 12px; border: 1px solid #eee;">
+                        <img src="https://i.ibb.co/WZrmtF8/Screenshot-2024-08-21-at-20-48-36.png" alt="我们的拍立得合照"
+                             style="width: 100%; max-height: 220px; object-fit: cover; border-radius: 12px; margin-top: 12px; border: 1px solid #eee;">
                     </div>
                 </div>
 
-                <!-- 事件5：上次生日礼物 -->
-                <div class="timeline-item">
+                <div class="timeline-item preview-hidden" data-index="4">
                     <div class="timeline-content">
                         <div class="date">2023.12.24</div>
                         <h3>上次生日礼物</h3>
@@ -165,8 +420,7 @@
                     </div>
                 </div>
 
-                <!-- 你可以继续添加更多事件 -->
-                <div class="timeline-item">
+                <div class="timeline-item preview-hidden" data-index="5">
                     <div class="timeline-content">
                         <div class="date">2024.??.??</div>
                         <h3>未完待续...</h3>
@@ -174,99 +428,162 @@
                     </div>
                 </div>
             </div>
-            <!-- 时间轴内容区域结束 -->
 
+            <div id="previewOverlay" class="preview-overlay" style="display: none;">
+                <span>🔒</span>
+                后面的故事已被锁定<br>
+                <small style="color: #8e44ad;">输入密码即可解锁全部回忆</small>
+            </div>
 
-            <!-- 极简音乐控制 -->
             <audio id="bgm" loop preload="auto" style="display: none;">
                 <source src="Musics/银河列车.mp3" type="audio/mpeg">
             </audio>
 
-
-
-            <script>
-                const audio = document.getElementById('bgm');
-                const muteToggleBtn = document.getElementById('muteToggleBtn');
-                const musicHint = document.getElementById('musicHint');
-                let isMuted = false; // 初始状态为未静音（即播放）
-
-                // 1. 页面解锁时自动播放音乐
-                window.addEventListener('hashchange', tryPlayOnUnlock);
-                window.onload = tryPlayOnUnlock;
-
-                function tryPlayOnUnlock() {
-                    if (window.location.hash === '#unlocked' && audio.paused) {
-                        audio.play().then(() => {
-                            // 播放成功，更新按钮为“非静音”状态（🎵）
-                            muteToggleBtn.textContent = '🎵';
-                            musicHint.textContent = '正在播放，点击静音';
-                            isMuted = false;
-                            audio.muted = false;
-                        }).catch(e => {
-                            console.log("自动播放被阻止:", e);
-                            musicHint.textContent = '播放被阻止，请点击图标手动播放';
-                            // 如果自动播放失败，将按钮状态设置为“静音”（🔇），等待用户手动点击
-                            muteToggleBtn.textContent = '🔇';
-                            isMuted = true;
-                            audio.muted = true;
-                        });
-                    }
-                }
-
-                // 2. 点击图标，在“静音/取消静音”之间切换
-                muteToggleBtn.addEventListener('click', function() {
-                    isMuted = !isMuted; // 切换状态
-                    audio.muted = isMuted; // 应用静音状态
-
-                    // 根据状态更新图标和提示
-                    if (isMuted) {
-                        muteToggleBtn.textContent = '🔇';
-                        musicHint.textContent = '已静音，点击恢复播放';
-                    } else {
-                        muteToggleBtn.textContent = '🎵';
-                        musicHint.textContent = '正在播放，点击静音';
-                        // 如果之前暂停了（比如自动播放失败），在取消静音时尝试播放
-                        if (audio.paused) {
-                            audio.play();
-                        }
-                    }
-                });
-            </script>
-
-
-
             <div style="text-align: center; margin-top: 30px; color: #888; font-style: italic;">
                 <p>—— 时光会走远，但回忆永存。生日快乐，x！ ——</p>
             </div>
+        </div>
+    </div>
 
-
-
-
+    <!-- ===== 核心脚本 ===== -->
     <script>
-        const correctPassword = "xuan"; // 请务必修改密码！
-        document.getElementById('submitBtn').addEventListener('click', checkPassword);
-        document.getElementById('passwordInput').addEventListener('keypress', function(event) {
-            if (event.key === 'Enter') checkPassword();
+        // ---------- 密码解锁 ----------
+        const correctPassword = "xuan";
+        const loginArea = document.getElementById('loginArea');
+        const hiddenContent = document.getElementById('hiddenContent');
+        const passwordInput = document.getElementById('passwordInput');
+        const errorMsg = document.getElementById('errorMsg');
+        const submitBtn = document.getElementById('submitBtn');
+
+        function unlockFull() {
+            loginArea.style.display = 'none';
+            hiddenContent.style.display = 'block';
+            window.location.hash = 'unlocked';
+            document.querySelectorAll('.timeline-item').forEach(item => {
+                item.classList.remove('preview-hidden');
+                item.classList.remove('preview-visible');
+            });
+            document.getElementById('previewOverlay').style.display = 'none';
+        }
+
+        submitBtn.addEventListener('click', checkPassword);
+        passwordInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') checkPassword();
         });
+
         function checkPassword() {
-            const input = document.getElementById('passwordInput').value;
-            const errorMsg = document.getElementById('errorMsg');
+            const input = passwordInput.value;
             if (input === correctPassword) {
-                document.getElementById('loginArea').style.display = 'none';
-                document.getElementById('hiddenContent').style.display = 'block';
-                window.location.hash = 'unlocked';
+                unlockFull();
             } else {
                 errorMsg.textContent = '密码不对哦，再想想吧~';
-                document.getElementById('passwordInput').value = '';
-                document.getElementById('passwordInput').focus();
+                passwordInput.value = '';
+                passwordInput.focus();
             }
         }
+
         window.onload = function() {
-            if(window.location.hash === '#unlocked') {
-                document.getElementById('loginArea').style.display = 'none';
-                document.getElementById('hiddenContent').style.display = 'block';
+            if (window.location.hash === '#unlocked') {
+                unlockFull();
+                setTimeout(tryPlayBGM, 300);
             }
         };
+
+        // ---------- 试看模式 ----------
+        const previewBtn = document.getElementById('previewBtn');
+        const previewOverlay = document.getElementById('previewOverlay');
+
+        previewBtn.addEventListener('click', function() {
+            loginArea.style.display = 'none';
+            hiddenContent.style.display = 'block';
+
+            document.querySelectorAll('.timeline-item').forEach(item => {
+                if (item.classList.contains('preview-visible')) {
+                    item.classList.remove('preview-hidden');
+                } else {
+                    item.classList.add('preview-hidden');
+                }
+            });
+
+            previewOverlay.style.display = 'block';
+            tryPlayBGM();
+        });
+
+        // ---------- 音乐控制 ----------
+        const audio = document.getElementById('bgm');
+        const muteToggleBtn = document.getElementById('muteToggleBtn');
+        const musicHint = document.getElementById('musicHint');
+        let isMuted = false;
+
+        function tryPlayBGM() {
+            if (audio.paused) {
+                audio.play().then(() => {
+                    muteToggleBtn.textContent = '🎵';
+                    musicHint.textContent = '正在播放，点击静音';
+                    isMuted = false;
+                    audio.muted = false;
+                }).catch(e => {
+                    console.log("自动播放被阻止:", e);
+                    musicHint.textContent = '播放被阻止，请点击图标手动播放';
+                    muteToggleBtn.textContent = '🔇';
+                    isMuted = true;
+                    audio.muted = true;
+                });
+            }
+        }
+
+        window.addEventListener('hashchange', function() {
+            if (window.location.hash === '#unlocked') {
+                tryPlayBGM();
+            }
+        });
+
+        muteToggleBtn.addEventListener('click', function() {
+            isMuted = !isMuted;
+            audio.muted = isMuted;
+            if (isMuted) {
+                muteToggleBtn.textContent = '🔇';
+                musicHint.textContent = '已静音，点击恢复播放';
+            } else {
+                muteToggleBtn.textContent = '🎵';
+                musicHint.textContent = '正在播放，点击静音';
+                if (audio.paused) {
+                    audio.play();
+                }
+            }
+        });
+
+        // ---------- 修改日志弹窗 ----------
+        const changelogBtn = document.getElementById('changelogBtn');
+        const changelogModal = document.getElementById('changelogModal');
+        const modalCloseBtn = document.getElementById('modalCloseBtn');
+
+        function openModal() {
+            changelogModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {
+            changelogModal.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        changelogBtn.addEventListener('click', openModal);
+        modalCloseBtn.addEventListener('click', closeModal);
+
+        // 点击遮罩层关闭
+        changelogModal.addEventListener('click', function(e) {
+            if (e.target === changelogModal) {
+                closeModal();
+            }
+        });
+
+        // ESC 键关闭
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && changelogModal.classList.contains('active')) {
+                closeModal();
+            }
+        });
     </script>
 </body>
 </html>
